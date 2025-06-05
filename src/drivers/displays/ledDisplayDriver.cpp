@@ -21,6 +21,10 @@ int fadeDirection = 1;
 int fadeAmount = 0;
 #endif // USE_LED
 
+// Static variables for hashing LED blinking
+static unsigned long previousLedToggleMillis = 0;
+static bool hashingLedState = false;
+
 bool ledOn = false;
 extern monitor_data mMonitor;
 
@@ -98,20 +102,40 @@ void ledDisplay_DoLedStuff(unsigned long frame)
     break;
 
   case NM_hashing:
-    leds.setRGB(0, 0, 255);
-    fadeAmount = FAST_FADE;
+    // Change LED color to Green
+    // leds.setRGB(0, 255, 0); // This will be set based on hashingLedState
+    // Disable fading
+    fadeAmount = 0;
+    brightness = MAX_BRIGHTNESS; // Keep LED at full brightness when ON
+
+    // Implement blinking pattern
+    if (millis() - previousLedToggleMillis >= 500) {
+      previousLedToggleMillis = millis();
+      hashingLedState = !hashingLedState;
+    }
+
+    if (hashingLedState) {
+      leds.setRGB(0, 255, 0); // Green
+    } else {
+      leds.setRGB(0, 0, 0); // Off
+    }
     break;
   }
 
-  leds.fadeLightBy(0xFF - brightness);
-  FastLED.show();
-
-  brightness = brightness + (fadeDirection * fadeAmount);
-  if (brightness <= 0 || brightness >= MAX_BRIGHTNESS)
-  {
-    fadeDirection = -fadeDirection;
+  // Apply fading or direct LED state for NM_hashing
+  if (mMonitor.NerdStatus != NM_hashing) {
+    leds.fadeLightBy(0xFF - brightness);
+    brightness = brightness + (fadeDirection * fadeAmount);
+    if (brightness <= 0 || brightness >= MAX_BRIGHTNESS)
+    {
+      fadeDirection = -fadeDirection;
+    }
+    brightness = constrain(brightness, 0, MAX_BRIGHTNESS);
   }
-  brightness = constrain(brightness, 0, MAX_BRIGHTNESS);
+  // For NM_hashing, brightness is handled by turning LED on/off directly.
+  // If fadeAmount is 0 (as in NM_waitingConfig or NM_hashing), brightness logic is skipped for those.
+
+  FastLED.show();
 #endif
 }
 

@@ -191,7 +191,7 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
     int zeros = (int) strtol(mJob.nbits.substring(0, 2).c_str(), 0, 16) - 3;
     memcpy(target + zeros - 2, mJob.nbits.substring(2).c_str(), mJob.nbits.length() - 2);
     target[TARGET_BUFFER_SIZE] = 0;
-    Serial.print("    target: "); Serial.println(target);
+    //Serial.print("    target: "); Serial.println(target);
     
     // bytearray target
     size_t size_target = to_byte_array(target, 32, mMiner.bytearray_target);
@@ -212,7 +212,7 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
     
     //get coinbase - coinbase_hash_bin = hashlib.sha256(hashlib.sha256(binascii.unhexlify(coinbase)).digest()).digest()
     String coinbase = mJob.coinb1 + mWorker.extranonce1 + mWorker.extranonce2 + mJob.coinb2;
-    Serial.print("    coinbase: "); Serial.println(coinbase);
+    //Serial.print("    coinbase: "); Serial.println(coinbase);
     size_t str_len = coinbase.length()/2;
     uint8_t bytearray[str_len];
 
@@ -295,14 +295,14 @@ miner_data calculateMiningData(mining_subscribe& mWorker, mining_job mJob){
     }
     // merkle root from merkle_result
     
-    Serial.print("    merkle sha         : ");
+    //Serial.print("    merkle sha         : ");
     char merkle_root[65];
     for (int i = 0; i < 32; i++) {
-      Serial.printf("%02x", mMiner.merkle_result[i]);
+      //Serial.printf("%02x", mMiner.merkle_result[i]);
       snprintf(&merkle_root[i*2], 3, "%02x", mMiner.merkle_result[i]);
     }
     merkle_root[65] = 0;
-    Serial.println("");
+    //Serial.println("");
 
     // calculate blockheader
     // j.block_header = ''.join([j.version, j.prevhash, merkle_root, j.ntime, j.nbits])

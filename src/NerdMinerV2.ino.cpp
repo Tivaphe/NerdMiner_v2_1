@@ -96,7 +96,7 @@ void setup()
   #endif
 
   /******** INIT NERDMINER ************/
-  Serial.println("NerdMiner v2 starting......");
+  //Serial.println("NerdMiner v2 starting......");
 
   /******** INIT DISPLAY ************/
   initDisplay();
@@ -119,8 +119,8 @@ void setup()
   /******** CREATE TASK TO PRINT SCREEN *****/
   //tft.pushImage(0, 0, MinerWidth, MinerHeight, MinerScreen);
   // Higher prio monitor task
-  Serial.println("");
-  Serial.println("Initiating tasks...");
+  //Serial.println("");
+  //Serial.println("Initiating tasks...");
   char *name = (char*) malloc(32);
   sprintf(name, "(%s)", "Monitor");
   BaseType_t res1 = xTaskCreatePinnedToCore(runMonitor, "Monitor", 10000, (void*)name, 4, NULL,1);

@@ -56,19 +56,19 @@ bool checkPoolConnection(void) {
   
   isMinerSuscribed = false;
 
-  Serial.println("Client not connected, trying to connect..."); 
+  //Serial.println("Client not connected, trying to connect...");
   
   //Resolve first time pool DNS and save IP
   if(serverIP == IPAddress(1,1,1,1)) {
     WiFi.hostByName(Settings.PoolAddress.c_str(), serverIP);
-    Serial.printf("Resolved DNS and save ip (first time) got: %s\n", serverIP.toString());
+    //Serial.printf("Resolved DNS and save ip (first time) got: %s\n", serverIP.toString());
   }
 
   //Try connecting pool IP
   if (!client.connect(serverIP, Settings.PoolPort)) {
-    Serial.println("Imposible to connect to : " + Settings.PoolAddress);
+    //Serial.println("Imposible to connect to : " + Settings.PoolAddress);
     WiFi.hostByName(Settings.PoolAddress.c_str(), serverIP);
-    Serial.printf("Resolved DNS got: %s\n", serverIP.toString());
+    //Serial.printf("Resolved DNS got: %s\n", serverIP.toString());
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     return false;
   }
@@ -89,7 +89,7 @@ bool checkPoolInactivity(unsigned int keepAliveTime, unsigned long inactivityTim
     // send something to pool to hold socket oppened
     if(millis() - mLastTXtoPool > keepAliveTime){
       mLastTXtoPool = millis();
-      Serial.println("  Sending  : KeepAlive suggest_difficulty");
+      //Serial.println("  Sending  : KeepAlive suggest_difficulty");
       //if (client.print("{}\n") == 0) {
         tx_suggest_difficulty(client, DEFAULT_DIFFICULTY);
       /*if(tx_suggest_difficulty(client, DEFAULT_DIFFICULTY)){
@@ -113,8 +113,8 @@ void runStratumWorker(void *name) {
 
 // TEST: https://bitcoin.stackexchange.com/questions/22929/full-example-data-for-scrypt-stratum-client
 
-  Serial.println("");
-  Serial.printf("\n[WORKER] Started. Running %s on core %d\n", (char *)name, xPortGetCoreID());
+  //Serial.println("");
+  //Serial.printf("\n[WORKER] Started. Running %s on core %d\n", (char *)name, xPortGetCoreID());
 
   #ifdef DEBUG_MEMORY
   Serial.printf("### [Total Heap / Free heap / Min free heap]: %d / %d / %d \n", ESP.getHeapSize(), ESP.getFreeHeap(), ESP.getMinFreeHeap());
@@ -169,7 +169,7 @@ void runStratumWorker(void *name) {
     //Check if pool is down for almost 5minutes and then restart connection with pool (1min=600000ms)
     if(checkPoolInactivity(KEEPALIVE_TIME_ms, POOLINACTIVITY_TIME_ms)){
       //Restart connection
-      Serial.println("  Detected more than 2 min without data form stratum server. Closing socket and reopening...");
+      //Serial.println("  Detected more than 2 min without data form stratum server. Closing socket and reopening...");
       client.stop();
       isMinerSuscribed=false;
       continue; 
@@ -178,7 +178,7 @@ void runStratumWorker(void *name) {
     //Read pending messages from pool
     while(client.connected() && client.available()){
 
-      Serial.println("  Received message from pool");
+      //Serial.println("  Received message from pool");
       String line = client.readStringUntil('\n');
       stratum_method result = parse_mining_method(line);
       switch (result)
@@ -201,7 +201,7 @@ void runStratumWorker(void *name) {
           case MINING_SET_DIFFICULTY: parse_mining_set_difficulty(line, currentPoolDifficulty);
                                       mMiner.poolDifficulty = currentPoolDifficulty;
                                       break;
-          case STRATUM_SUCCESS:       Serial.println("  Parsed JSON: Success"); break;
+          case STRATUM_SUCCESS:       /* Serial.println("  Parsed JSON: Success"); */ break;
           default:                    Serial.println("  Parsed JSON: unknown"); break;
 
       }
@@ -223,7 +223,7 @@ void runMiner(void * task_id) {
 
   unsigned int miner_id = (uint32_t)task_id;
 
-  Serial.printf("[MINER]  %d  Started runMiner Task!\n", miner_id);
+  //Serial.printf("[MINER]  %d  Started runMiner Task!\n", miner_id);
 
   while(1){
 
@@ -267,7 +267,7 @@ void runMiner(void * task_id) {
       header64 = mMiner.bytearray_blockheader2 + 64;
     
     bool is16BitShare=true;  
-    Serial.println(">>> STARTING TO HASH NONCES");
+    //Serial.println(">>> STARTING TO HASH NONCES");
     while(true) {
       if (miner_id == 0)
         memcpy(mMiner.bytearray_blockheader + 76, &nonce, 4);
@@ -289,7 +289,7 @@ void runMiner(void * task_id) {
 
       hashes++;
       if (nonce > TARGET_NONCE) break; //exit
-      if(!mMiner.inRun) { Serial.println ("MINER WORK ABORTED >> waiting new job"); break;}
+      if(!mMiner.inRun) { /* Serial.println ("MINER WORK ABORTED >> waiting new job"); */ break;}
 
       // check if 16bit share
       if(hash[31] !=0 || hash[30] !=0) {
@@ -313,11 +313,11 @@ void runMiner(void * task_id) {
       if(diff_hash > mMiner.poolDifficulty)//(hash[29] <= 0x3B)//(diff_hash > 1e-9)
       {
         tx_mining_submit(client, mWorker, mJob, nonce);
-        Serial.print("   - Current diff share: "); Serial.println(diff_hash,12);
-        Serial.print("   - Current pool diff : "); Serial.println(mMiner.poolDifficulty,12);
-        Serial.print("   - TX SHARE: ");
-        for (size_t i = 0; i < 32; i++)
-            Serial.printf("%02x", hash[i]);
+        //Serial.print("   - Current diff share: "); Serial.println(diff_hash,12);
+        //Serial.print("   - Current pool diff : "); Serial.println(mMiner.poolDifficulty,12);
+        //Serial.print("   - TX SHARE: ");
+        //for (size_t i = 0; i < 32; i++)
+        //    Serial.printf("%02x", hash[i]);
         #ifdef DEBUG_MINING
         Serial.println("");
         Serial.print("   - Current nonce: "); Serial.println(nonce);
@@ -326,7 +326,7 @@ void runMiner(void * task_id) {
             Serial.printf("%02x", mMiner.bytearray_blockheader[i]);
         }
         #endif
-        Serial.println("");
+        //Serial.println("");
         mLastTXtoPool = millis();  
       }
       
@@ -342,7 +342,7 @@ void runMiner(void * task_id) {
       if(checkValid(hash, mMiner.bytearray_target)){
         Serial.printf("[WORKER] %d CONGRATULATIONS! Valid block found with nonce: %d | 0x%x\n", miner_id, nonce, nonce);
         valids++;
-        Serial.printf("[WORKER]  %d  Submitted work valid!\n", miner_id);
+        //Serial.printf("[WORKER]  %d  Submitted work valid!\n", miner_id);
         // wait for new job
         break;
       }
@@ -354,7 +354,7 @@ void runMiner(void * task_id) {
     //wc_Sha256Free(midstate);
 
     mMiner.inRun = false;
-    Serial.print(">>> Finished job waiting new data from pool");
+    //Serial.print(">>> Finished job waiting new data from pool");
 
     if(hashes>=MAX_NONCE_STEP) {
       Mhashes=Mhashes+MAX_NONCE_STEP/1000000;
@@ -362,8 +362,9 @@ void runMiner(void * task_id) {
     }
 
     uint32_t duration = micros() - startT;
-    if (esp_task_wdt_reset() == ESP_OK)
-      Serial.print(">>> Resetting watchdog timer");
+    if (esp_task_wdt_reset() == ESP_OK) {
+      //Serial.print(">>> Resetting watchdog timer");
+    }
   }
 }
 
@@ -410,7 +411,7 @@ void resetStat() {
 void runMonitor(void *name)
 {
 
-  Serial.println("[MONITOR] started");
+  //Serial.println("[MONITOR] started");
   restoreStat();
 
   unsigned long mLastCheck = 0;
