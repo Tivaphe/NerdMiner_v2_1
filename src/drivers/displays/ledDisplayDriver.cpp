@@ -24,6 +24,8 @@ int fadeAmount = 0;
 // Static variables for hashing LED blinking
 static unsigned long previousLedToggleMillis = 0;
 static bool hashingLedState = false;
+static bool nextColorIsRed = true; // To alternate Red/Blue, true = Red, false = Blue
+static int previousNerdStatusLed = -1; // To detect state changes for resetting LED
 
 bool ledOn = false;
 extern monitor_data mMonitor;
@@ -79,63 +81,82 @@ unsigned long previousMillis = 0;
 
 void ledDisplay_DoLedStuff(unsigned long frame)
 {
-
 #ifdef USE_LED
 
+    if (mMonitor.NerdStatus != NM_hashing && previousNerdStatusLed == NM_hashing) {
+        hashingLedState = false;      // Ensure LED is marked OFF
+        nextColorIsRed = true;        // Reset color sequence for next time
+        leds = CRGB::Black;           // Explicitly turn LED off
+        FastLED.show();               // Update LED
+    }
+    previousNerdStatusLed = mMonitor.NerdStatus;
+
     if (!ledOn)
-  {
-    FastLED.clear(true);
-    return;
-  }
-
-  switch (mMonitor.NerdStatus)
-  {
-  case NM_waitingConfig:
-    brightness = MAX_BRIGHTNESS;
-    leds.setRGB(255, 255, 0);
-    fadeAmount = 0;
-    break;
-
-  case NM_Connecting:
-    leds.setRGB(0, 0, 255);
-    fadeAmount = SLOW_FADE;
-    break;
-
-  case NM_hashing:
-    // Change LED color to Green
-    // leds.setRGB(0, 255, 0); // This will be set based on hashingLedState
-    // Disable fading
-    fadeAmount = 0;
-    brightness = MAX_BRIGHTNESS; // Keep LED at full brightness when ON
-
-    // Implement blinking pattern
-    if (millis() - previousLedToggleMillis >= 500) {
-      previousLedToggleMillis = millis();
-      hashingLedState = !hashingLedState;
+    {
+        FastLED.clear(true);
+        return;
     }
 
-    if (hashingLedState) {
-      leds.setRGB(0, 255, 0); // Green
-    } else {
-      leds.setRGB(0, 0, 0); // Off
-    }
-    break;
-  }
+    if (mMonitor.NerdStatus == NM_hashing) {
+        float currentKHs = mMonitor.currentHashRateKHs;
+        unsigned long blinkDelayMs = 750;
 
-  // Apply fading or direct LED state for NM_hashing
-  if (mMonitor.NerdStatus != NM_hashing) {
+        if (currentKHs > 0.1) {
+            blinkDelayMs = (unsigned long)(1000.0 / (currentKHs * 0.2 + 0.8));
+        }
+        blinkDelayMs = constrain(blinkDelayMs, 75, 750);
+
+        if (millis() - previousLedToggleMillis >= blinkDelayMs) {
+            hashingLedState = !hashingLedState;
+            previousLedToggleMillis = millis();
+
+            if (hashingLedState) {
+                if (nextColorIsRed) {
+                    leds.setRGB(255, 0, 0); // Red
+                } else {
+                    leds.setRGB(0, 0, 255); // Blue
+                }
+                nextColorIsRed = !nextColorIsRed;
+            } else {
+                leds.setRGB(0, 0, 0); // Off
+            }
+        }
+
+        FastLED.show();
+        return;
+    }
+
+    // Logic for other states (NM_waitingConfig, NM_Connecting)
+    switch (mMonitor.NerdStatus)
+    {
+    case NM_waitingConfig:
+        brightness = MAX_BRIGHTNESS;
+        leds.setRGB(255, 255, 0); // Yellow
+        fadeAmount = 0;
+        break;
+
+    case NM_Connecting:
+        leds.setRGB(0, 0, 255); // Blue
+        fadeAmount = SLOW_FADE;
+        break;
+
+    // NM_hashing is handled above and returns
+    default:
+        // Potentially handle other unknown states or do nothing
+        break;
+    }
+
+    // Apply fading for states other than NM_hashing
+    // This block is now only reached if not NM_hashing
     leds.fadeLightBy(0xFF - brightness);
     brightness = brightness + (fadeDirection * fadeAmount);
     if (brightness <= 0 || brightness >= MAX_BRIGHTNESS)
     {
-      fadeDirection = -fadeDirection;
+        fadeDirection = -fadeDirection;
     }
     brightness = constrain(brightness, 0, MAX_BRIGHTNESS);
-  }
-  // For NM_hashing, brightness is handled by turning LED on/off directly.
-  // If fadeAmount is 0 (as in NM_waitingConfig or NM_hashing), brightness logic is skipped for those.
 
-  FastLED.show();
+    FastLED.show();
 #endif
 }
 
